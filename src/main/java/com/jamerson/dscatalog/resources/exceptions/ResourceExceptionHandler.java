@@ -1,5 +1,6 @@
 package com.jamerson.dscatalog.resources.exceptions;
 
+import com.jamerson.dscatalog.services.exceptions.DatabaseException;
 import com.jamerson.dscatalog.services.exceptions.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,14 +15,27 @@ public class ResourceExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<StandardError> entityNotFound(ResourceNotFoundException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.NOT_FOUND;
+        StandardError err = mountStandardError(status, e, request);
+        return ResponseEntity.status(status).body(err);
+    }
+
+    @ExceptionHandler(DatabaseException.class)
+    public ResponseEntity<StandardError> database(DatabaseException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        StandardError err = mountStandardError(status, e, request);
+        return ResponseEntity.status(status).body(err);
+    }
+
+    private StandardError mountStandardError(HttpStatus status, RuntimeException e, HttpServletRequest request) {
         StandardError err = new StandardError();
         err.setTimestamp(Instant.now());
-        err.setStatus(HttpStatus.NOT_FOUND.value());
-        err.setError(HttpStatus.NOT_FOUND.getReasonPhrase());
+        err.setStatus(status.value());
+        err.setError(status.getReasonPhrase());
         err.setMessage(e.getMessage());
         err.setPath(request.getRequestURI());
 
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(err);
+        return err;
     }
 
 }
